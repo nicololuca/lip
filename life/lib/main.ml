@@ -1,6 +1,11 @@
 module T = ANSITerminal
 open Printf
 
+let parse (s : string) : Rule.rule =
+  let lexbuf = Lexing.from_string s in
+  let rule = Parser.prog Lexer.read_token lexbuf in
+  rule
+
 (* let rec range a b = if b<a then [] else a::(range (a+1) b) *)
 
 let rec zeroes = function
@@ -46,23 +51,29 @@ let count1 l = List.fold_left (fun s x -> s + (if x then 1 else 0)) 0 l
 
 let count w = List.fold_left (fun s x -> s + count1 x) 0 w
 
-let alive w i j =
+let alive w i j (rule: Rule.rule) =
   let (cell,nb) = neighbours w i j in
   let alive_nb = count nb in
+  let rule_seqs = match rule with
+    Rule (s,[0]) -> (s,[])
+  | Rule (s,b) -> (s,b)
+  | _ -> failwith "Invalid rule"
+  in
+  let (s,b) = rule_seqs in
   if cell then (* cell is alive *)
     (* cell survives? *)
-    alive_nb = 2 || alive_nb = 3
+    List.exists (fun x -> x=alive_nb) s
   else (* cell is dead *)
     (* cell is born? *)
-    alive_nb = 3
+    List.exists (fun x -> x=alive_nb) b
 
-let step1 w i =
+let step1 w i rule =
   let n = List.length w in
-  List.mapi (fun j _ -> alive w i j) (zeroes n)
+  List.mapi (fun j _ -> alive w i j rule) (zeroes n)
 
-let step w =
+let step w rule =
   let n = List.length w in
-  List.mapi (fun i _ -> step1 w i) (zeroes n)
+  List.mapi (fun i _ -> step1 w i rule) (zeroes n)
 
 (* let step w = List.map step1 w *)
 (* let step w = w *)
@@ -74,6 +85,6 @@ let display w =
   printf "%s\n%!" (string_of_world w);
   Unix.sleepf 0.15;;
 
-let rec loop w n =
+let rec loop w n rule =
   if n=0 then (display w; w)
-  else (display w; loop (step w) (n-1))
+  else (display w; loop (step w rule) (n-1) rule)
