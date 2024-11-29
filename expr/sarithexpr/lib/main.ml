@@ -32,6 +32,12 @@ let parse (s : string) : expr =
   let ast = Parser.prog Lexer.read lexbuf in
   ast
 
+let rec is_nv = function
+  Zero -> true
+| Succ e1 -> is_nv e1
+| Pred e1 when e1!=Zero -> is_nv e1
+| _ -> false
+
 let rec typecheck = function
     True
   | False -> BoolT
@@ -54,20 +60,17 @@ let rec typecheck = function
           else raise (TypeError (string_of_expr e2 ^ " has type " ^ string_of_type type2 ^ " but type " ^ string_of_type type1 ^ " was expected"))
   )
   | Zero -> NatT
-  | Succ e
-  | Pred e ->
+  | Succ e->
       if (typecheck e)=NatT then NatT
+      else raise (TypeError ((string_of_expr e) ^ " has type Bool, but type Nat was expected"))
+  | Pred e->
+      if (typecheck e)=NatT && is_nv(Pred e) then NatT
       else raise (TypeError ((string_of_expr e) ^ " has type Bool, but type Nat was expected"))
   | IsZero e ->
       if (typecheck e)=NatT then BoolT
       else raise (TypeError ((string_of_expr e) ^ " has type Bool, but type Nat was expected"))
 ;;
   
-
-let rec is_nv = function
-    Zero -> true
-  | Succ e1 -> is_nv e1
-  | _ -> false
 
 let rec trace1 = function
     If(True,e1,_) -> e1
