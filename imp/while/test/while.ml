@@ -38,6 +38,13 @@ let test_trace (cmd,n_steps,var,exp_val) =
     St s -> s var = exp_val
   | Cmd(_,s) -> s var = exp_val
 
+  let test_trace2 (cmd,n_steps,var) =
+    cmd
+    |> parse
+    |> fun c -> last (trace n_steps c)
+    |> fun t -> match t with
+      St s -> s var
+    | Cmd(_,s) -> s var
 
 let%test "test_trace1" = test_trace
     ("x:=0", 1, "x", Nat 0)
